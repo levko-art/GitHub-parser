@@ -1,6 +1,6 @@
 import random
-
 import requests
+import json
 
 
 class GitHubCrawler:
@@ -21,7 +21,7 @@ class GitHubCrawler:
             headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
 
             try:
-                response = requests.get(url, proxies={'http': proxy, 'https': proxy}, headers=headers, timeout=10)
+                response = requests.get(url, headers=headers, timeout=10)
                 response.raise_for_status()
 
                 json_data = response.json()
@@ -29,8 +29,14 @@ class GitHubCrawler:
                 search_results = json_data['payload']['results']
 
                 for result in search_results:
-                    repo_url = f'https://github.com/{result["repo"]["repository"]["owner_login"]}/{result["repo"]["repository"]["name"]}'
-                    results.append({'url': repo_url})
+                    if result['repo'] is not None:
+                        results.append({
+                            'url': f'https://github.com/{result["repo"]["repository"]["owner_login"]}/{result["repo"]["repository"]["name"]}',
+                            'extra': {
+                                'owner': result["repo"]["repository"]["owner_login"],
+                                'language_stats': result["language"]
+                            }
+                        })
             except requests.RequestException as e:
                 print(f"Error: {e}")
 
@@ -40,8 +46,8 @@ class GitHubCrawler:
 if __name__ == '__main__':
     crawler = GitHubCrawler(
         keywords=['css'],
-        proxies=['8.209.114.72:3129'],
+        proxies=['167.71.41.76:8080', '167.71.41.76:8080'],
         search_type='Repositories'
     )
     results = crawler.search_github()
-    print(results)
+    print(json.dumps(results, indent=2))
